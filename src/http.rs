@@ -1,23 +1,21 @@
 use axum::{
-    http::{header::CACHE_CONTROL, HeaderValue, StatusCode},
-    routing::get_service,
     Router,
+    http::{HeaderValue, StatusCode, header::CACHE_CONTROL},
+    routing::get_service,
 };
-use tower_http::{
-    services::ServeDir,
-    set_header::SetResponseHeaderLayer,
-    trace::TraceLayer,
-};
+use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer, trace::TraceLayer};
 
 /// Build the HTTP router serving embedded static assets.
 pub fn build_http_router() -> anyhow::Result<Router> {
-    let static_service = get_service(ServeDir::new("static").append_index_html_on_directories(true))
-        .handle_error(|err| async move {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("static file error: {err}"),
-            )
-        });
+    let static_service = get_service(
+        ServeDir::new("static").append_index_html_on_directories(true),
+    )
+    .handle_error(|err| async move {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("static file error: {err}"),
+        )
+    });
 
     let router = Router::new()
         .fallback_service(static_service)
