@@ -156,12 +156,12 @@ pub async fn serve_udp(state: UdpState, port: u16) -> anyhow::Result<()> {
                 }
             }
             _ = tick.tick() => {
-                if let Some(s) = &session {
-                    if s.last_seen.elapsed() > SESSION_TIMEOUT {
-                        info!("✗ UDP client timed out: {}", s.addr);
-                        session = None;
-                        state.slot.release().await;
-                    }
+                if let Some(s) = &session
+                    && s.last_seen.elapsed() > SESSION_TIMEOUT
+                {
+                    info!("✗ UDP client timed out: {}", s.addr);
+                    session = None;
+                    state.slot.release().await;
                 }
             }
         }
