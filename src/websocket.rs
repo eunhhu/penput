@@ -1,11 +1,11 @@
 use crate::connection::{ApprovalBroker, ConnectionSlot};
 use crate::mouse::MouseController;
 use axum::{
+    Router,
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     extract::{ConnectInfo, State},
     response::IntoResponse,
     routing::get,
-    Router,
 };
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
@@ -80,7 +80,11 @@ async fn handle_socket(stream: WebSocket, addr: SocketAddr, state: AppState) {
     }
 
     let (mut sender, mut receiver) = stream.split();
-    if sender.send(Message::Text("connected".into())).await.is_err() {
+    if sender
+        .send(Message::Text("connected".into()))
+        .await
+        .is_err()
+    {
         state.slot.release().await;
         return;
     }
@@ -102,22 +106,25 @@ async fn handle_socket(stream: WebSocket, addr: SocketAddr, state: AppState) {
     while let Some(msg) = receiver.next().await {
         match msg {
             Ok(Message::Text(text)) => {
-                if let Ok(init) = serde_json::from_str::<InitMsg>(&text) {
-                    if init.msg_type == "init" {
-                        ctx.width = init.width;
-                        ctx.height = init.height;
-                        info!("📡 Screen size: {}x{} from {}", init.width, init.height, addr);
-                        continue;
-                    }
+                if let Ok(init) = serde_json::from_str::<InitMsg>(&text)
+                    && init.msg_type == "init"
+                {
+                    ctx.width = init.width;
+                    ctx.height = init.height;
+                    info!(
+                        "📡 Screen size: {}x{} from {}",
+                        init.width, init.height, addr
+                    );
+                    continue;
                 }
 
                 // App-level ping/pong for RTT measurement.
-                if let Ok(ping) = serde_json::from_str::<PingMsg>(&text) {
-                    if ping.msg_type == "ping" {
-                        let pong = serde_json::json!({"type":"pong","t":ping.t}).to_string();
-                        if sender.send(Message::Text(pong.into())).await.is_err() {
-                            break;
-                        }
+                if let Ok(ping) = serde_json::from_str::<PingMsg>(&text)
+                    && ping.msg_type == "ping"
+                {
+                    let pong = serde_json::json!({"type":"pong","t":ping.t}).to_string();
+                    if sender.send(Message::Text(pong.into())).await.is_err() {
+                        break;
                     }
                 }
             }
