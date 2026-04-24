@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::net::SocketAddr;
 
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{Mutex, mpsc, oneshot};
 use tracing::warn;
 
 /// Shared slot to enforce a single active client.
@@ -69,7 +69,7 @@ impl ApprovalBroker {
 
 /// CLI worker that handles approve/deny prompts.
 pub async fn approval_worker(mut rx: mpsc::Receiver<PendingApproval>) {
-    use tokio::io::{stdin, AsyncBufReadExt, BufReader};
+    use tokio::io::{AsyncBufReadExt, BufReader, stdin};
 
     let reader = BufReader::new(stdin());
     let mut lines = reader.lines();
@@ -82,7 +82,7 @@ pub async fn approval_worker(mut rx: mpsc::Receiver<PendingApproval>) {
             continue;
         }
 
-        print!("[{}] 📱 Connection request from {}\n", timestamp(), ip);
+        println!("[{}] 📱 Connection request from {}", timestamp(), ip);
         print!("           Approve? (y/n): ");
         let _ = std::io::stdout().flush();
 
